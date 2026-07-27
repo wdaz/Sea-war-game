@@ -143,7 +143,8 @@ Fleet status və ətraflı combat log sonrakı implementasiyada mövcud `Game`, 
 - `≥ 1024 px`: iki lövhə yan-yana, ortaq əməliyyat paneli aşağıda
 - `768–1023 px`: lövhələr daha kompakt, header iki sətrə keçə bilər
 - `< 768 px`: lövhələr şaquli düzülür, primary əmrlər viewport-un altına yaxın qalır
-- Touch hədəfləri minimum 44×44 px olmalıdır
+- Standalone düymə və əmrlərin touch hədəfləri minimum 44×44 px olmalıdır
+- 10×10 spatial grid xanaları mobil görünüşdə minimum 28×28 px olmalı və aydın pressed/focus feedback verməlidir
 - 10×10 grid viewport-a sığmalı, üfüqi scroll yaratmamalıdır
 
 ## 9. Xəta və boş vəziyyətlər

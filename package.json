@@ -7,13 +7,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "serve": "npx serve . -p 3000"
+    "serve": "node scripts/serve.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
     "jsdom": "^29.1.1",
     "lucide-static": "^1.27.0",
-    "serve": "^14.2.3",
     "vitest": "^4.1.10"
   }
 }

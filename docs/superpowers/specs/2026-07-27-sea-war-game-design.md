@@ -3,6 +3,8 @@
 **Tarix:** 2026-07-27  
 **Layihə:** Sea War (Amiral Batti)  
 **Texnologiya:** Vanilla JS (ES Modules), HTML5, CSS3  
+**Test:** Vitest (unit) + Playwright (e2e)  
+**Metodologiya:** Test-Driven Development (TDD)  
 **Məqsəd:** Öyrənmə / Portfolio
 
 ---
@@ -200,7 +202,30 @@ game.restart()                     // eyni AI çətinliyi ilə yenidən başla
 
 ## 7. Test Strategiyası
 
-**Alətlər:** Vitest (unit) + Playwright (e2e)
+**Alətlər:** Vitest (unit) + Playwright (e2e)  
+**Metodologiya:** Test-Driven Development (TDD)
+
+### TDD Axışı
+
+```
+Red   → Testi yaz, fail etsin
+Green → Minimum kod yaz, test keçsin
+Refactor → Kodu təmizlə, testlər hələ keçir
+```
+
+### TDD Tətbiq Qaydası
+
+| Komponent | Yanaşma |
+|---|---|
+| `Ship` | TDD — saf məntiq, DOM yoxdur |
+| `Board` | TDD — saf məntiq, DOM yoxdur |
+| `AI` | TDD — saf məntiq, DOM yoxdur |
+| `Game` | TDD — saf məntiq, DOM yoxdur |
+| `UI` | Test-after — DOM render, Playwright e2e ilə yoxlanılır |
+
+**Ardıcıllıq:** `Ship` → `Board` → `AI` → `Game` → `UI` → e2e
+
+Hər class üçün: əvvəlcə bütün unit testlər yazılır, sonra implementation.
 
 **Fayl strukturu:**
 

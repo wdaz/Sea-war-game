@@ -3,5 +3,7 @@ import { UI } from './UI.js';
 
 const game = new Game();
 const ui = new UI(game);
+
+ui.mount();
 game.start();
 ui.render();

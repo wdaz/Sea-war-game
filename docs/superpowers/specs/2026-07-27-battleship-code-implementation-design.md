@@ -301,7 +301,9 @@ Implementation notes:
   to `Enter` and `Space`.
 - Roving tabindex: the board is one tab stop; arrow keys, `Home`, and `End` move
   focus inside it. Without this a board would create 100 tab stops.
-- Already-attacked cells set `aria-disabled="true"` and leave the focus order.
+- Already-attacked cells are **not** `aria-disabled`, because clicking one is a
+  meaningful action that reports `Bu xanaya artıq hücum edilib!`. A non-ARIA
+  `data-spent` attribute drives styling; the state lives in the accessible name.
 - The message region is `aria-live="polite"`.
 
 ## Error handling

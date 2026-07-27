@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Do not modify `src/Game.js`, `src/Board.js`, `src/Ship.js`, or `src/AI.js`.
-- Do not modify the six existing tests in `tests/e2e/`. They must stay green.
+- Do not modify the 13 existing tests in `tests/e2e/`. They must stay green.
 - `.board` must have exactly 100 direct `.cell` children, `data-index` `0`–`99`, row-major. No wrapper element between them.
 - Preserve these selectors: `.game[data-phase]`, `[data-board="player"|"ai"]`, `[data-index]`, `[data-score="player"|"ai"]`, `[data-message]`, `[data-action="rotate"|"auto-place"|"new-game"]`, `[data-controls="placement"]`, and the classes `.ship .hit .miss .sunk .preview .preview--bad`.
 - The result panel restart button uses `data-action="restart"`, never `data-action="new-game"` — Playwright strict mode fails on duplicate matches.
@@ -299,7 +299,7 @@ Expected: PASS — 7 tests
 - [ ] **Step 9: Confirm nothing else broke**
 
 Run: `npm test`
-Expected: PASS — 22 existing plus 11 new
+Expected: PASS — 52 existing plus 11 new
 
 - [ ] **Step 10: Commit**
 
@@ -846,7 +846,7 @@ git commit -m "feat: add placement preview to BoardView"
 **Interfaces:**
 - Consumes: `BoardView` from Task 4
 - Produces:
-  - `BoardView.prototype.setInteractive(enabled) -> void` — when `enabled`, playable cells get `role="button"` and join the roving tab order; attacked cells get `aria-disabled="true"` and `tabindex="-1"`. When disabled, all cells lose `role`, `tabindex`, and `aria-disabled`.
+  - `BoardView.prototype.setInteractive(enabled) -> void` — when `enabled`, every cell gets `role="button"` and joins the roving tab order; attacked cells additionally get `data-spent="true"` for styling. When disabled, all cells lose `role`, `tabindex`, and `data-spent`. Attacked cells are never `aria-disabled` — clicking one is a real action that reports `Bu xanaya artıq hücum edilib!`, and marking it disabled would block both assistive technology and Playwright.
   - Arrow keys, `Home`, and `End` move focus inside the board. `Enter` and `Space` click the focused cell.
   - Exactly one cell carries `tabindex="0"` while interactive.
 
@@ -882,7 +882,7 @@ describe('BoardView keyboard access', () => {
     expect(view.cellAt(0).hasAttribute('role')).toBe(false);
   });
 
-  it('marks attacked cells as disabled and unfocusable', () => {
+  it('flags attacked cells for styling without disabling them', () => {
     const view = mounted();
     const states = new Array(100).fill('');
     states[4] = 'miss';
@@ -890,9 +890,25 @@ describe('BoardView keyboard access', () => {
     view.update({ states });
     view.setInteractive(true);
 
-    expect(view.cellAt(4).getAttribute('aria-disabled')).toBe('true');
-    expect(view.cellAt(4).getAttribute('tabindex')).toBe('-1');
-    expect(view.cellAt(5).getAttribute('aria-disabled')).toBe('true');
+    expect(view.cellAt(4).dataset.spent).toBe('true');
+    expect(view.cellAt(5).dataset.spent).toBe('true');
+    expect(view.cellAt(4).hasAttribute('aria-disabled')).toBe(false);
+    expect(view.cellAt(5).hasAttribute('aria-disabled')).toBe(false);
+    expect(view.cellAt(4).getAttribute('role')).toBe('button');
+    expect(view.cellAt(4).getAttribute('aria-label')).toBe('E1 · yan keçdi');
+  });
+
+  it('clears the spent flag when a board resets', () => {
+    const view = mounted();
+    const states = new Array(100).fill('');
+    states[4] = 'miss';
+    view.update({ states });
+    view.setInteractive(true);
+    expect(view.cellAt(4).dataset.spent).toBe('true');
+
+    view.update({ states: new Array(100).fill('') });
+    view.setInteractive(true);
+    expect(view.cellAt(4).dataset.spent).toBeUndefined();
   });
 
   it('moves focus with the arrow keys', () => {
@@ -985,13 +1001,15 @@ Add these methods to the class:
       if (!enabled) {
         cell.removeAttribute('role');
         cell.removeAttribute('tabindex');
-        cell.removeAttribute('aria-disabled');
+        delete cell.dataset.spent;
         continue;
       }
-      const spent = ['hit', 'miss', 'sunk'].includes(cell.dataset.state);
+      // Attacked cells are NOT aria-disabled: clicking one is a meaningful
+      // action that reports "already attacked". `data-spent` drives styling
+      // only; the state itself is already in the cell's accessible name.
+      if (['hit', 'miss', 'sunk'].includes(cell.dataset.state)) cell.dataset.spent = 'true';
+      else delete cell.dataset.spent;
       cell.setAttribute('role', 'button');
-      if (spent) cell.setAttribute('aria-disabled', 'true');
-      else cell.removeAttribute('aria-disabled');
       cell.setAttribute('tabindex', '-1');
     }
     if (enabled) this._focus(this.focusIndex, false);
@@ -1035,7 +1053,7 @@ Add these methods to the class:
 - [ ] **Step 4: Run it to make sure it passes**
 
 Run: `npx vitest run tests/unit/ui/BoardView.test.js`
-Expected: PASS — 25 tests
+Expected: PASS — 26 tests
 
 - [ ] **Step 5: Commit**
 
@@ -1913,12 +1931,12 @@ ui.render();
 - [ ] **Step 7: Run the full unit suite**
 
 Run: `npm test`
-Expected: PASS — 22 existing plus all new unit tests
+Expected: PASS — 52 existing plus all new unit tests
 
 - [ ] **Step 8: Run the existing end-to-end suite unchanged**
 
 Run: `npm run test:e2e`
-Expected: PASS — all 6 existing tests. Styling is still the old stylesheet, so appearance will be wrong; only behaviour matters at this step.
+Expected: PASS — all 13 existing tests. Styling is still the old stylesheet, so appearance will be wrong; only behaviour matters at this step.
 
 - [ ] **Step 9: Commit**
 
@@ -2125,10 +2143,10 @@ body {
 .cell.preview--bad .cell__marker { opacity: 1; }
 
 .game[data-phase="battle"] [data-board="ai"] .cell[role="button"] { cursor: crosshair; }
-.game[data-phase="battle"] [data-board="ai"] .cell:not([aria-disabled]):hover {
+.game[data-phase="battle"] [data-board="ai"] .cell:not([data-spent]):hover {
   background: color-mix(in srgb, var(--cyan) 12%, var(--surface-raised));
 }
-[data-board="ai"] .cell[aria-disabled="true"] { cursor: not-allowed; }
+[data-board="ai"] .cell[data-spent] { cursor: not-allowed; }
 .game[data-phase="placement"] [data-board="player"] .cell[role="button"] { cursor: pointer; }
 
 /* ---------- operations bar ---------- */
@@ -2282,7 +2300,7 @@ Expected: PASS — unchanged count. CSS is not exercised by jsdom.
 - [ ] **Step 3: Confirm the existing end-to-end suite still passes**
 
 Run: `npm run test:e2e`
-Expected: PASS — all 6 existing tests
+Expected: PASS — all 13 existing tests
 
 - [ ] **Step 4: Look at the result in a browser**
 
@@ -2454,12 +2472,17 @@ test.describe('Accessibility', () => {
     await expect(page.locator('[data-board="ai"] [data-index="1"]')).toHaveClass(/hit|miss/);
   });
 
-  test('marks attacked cells as disabled', async ({ page }) => {
+  test('flags spent cells without disabling them', async ({ page }) => {
     await page.goto('/');
     await page.click('[data-action="auto-place"]');
     await page.click('[data-board="ai"] [data-index="0"]');
-    await expect(page.locator('[data-board="ai"] [data-index="0"]'))
-      .toHaveAttribute('aria-disabled', 'true');
+
+    const cell = page.locator('[data-board="ai"] [data-index="0"]');
+    await expect(cell).toHaveAttribute('data-spent', 'true');
+    // Never aria-disabled: a second click is a real action that reports a message.
+    expect(await cell.getAttribute('aria-disabled')).toBeNull();
+    await cell.click();
+    await expect(page.locator('[data-message]')).toContainText('artıq hücum edilib');
   });
 
   test('announces the message region politely', async ({ page }) => {
@@ -2543,7 +2566,7 @@ test.describe('Result panel', () => {
 - [ ] **Step 5: Run the whole end-to-end suite**
 
 Run: `npm run test:e2e`
-Expected: PASS — 6 existing plus the new tests
+Expected: PASS — 13 existing plus the new tests
 
 - [ ] **Step 6: Run the whole unit suite**
 
@@ -2575,4 +2598,4 @@ Confirm every item:
 - `.board` has exactly 100 direct `.cell` children on both boards.
 - No horizontal scrollbar at 1440px, 800px, or 390px.
 - `git diff --stat master -- src/Game.js src/Board.js src/Ship.js src/AI.js` prints nothing.
-- The six original end-to-end tests are unmodified: `git diff master -- tests/e2e/placement.spec.js tests/e2e/battle.spec.js` prints nothing, and `tests/e2e/gameover.spec.js` shows additions only.
+- The 13 original end-to-end tests are unmodified: `git diff master -- tests/e2e/placement.spec.js tests/e2e/battle.spec.js` prints nothing, and `tests/e2e/gameover.spec.js` shows additions only.

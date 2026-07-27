@@ -70,13 +70,15 @@ export class BoardView {
       if (!enabled) {
         cell.removeAttribute('role');
         cell.removeAttribute('tabindex');
-        cell.removeAttribute('aria-disabled');
+        delete cell.dataset.spent;
         continue;
       }
-      const spent = ['hit', 'miss', 'sunk'].includes(cell.dataset.state);
+      // Attacked cells are NOT aria-disabled: clicking one is a meaningful
+      // action that reports "already attacked". `data-spent` drives styling
+      // only; the state itself is already in the cell's accessible name.
+      if (['hit', 'miss', 'sunk'].includes(cell.dataset.state)) cell.dataset.spent = 'true';
+      else delete cell.dataset.spent;
       cell.setAttribute('role', 'button');
-      if (spent) cell.setAttribute('aria-disabled', 'true');
-      else cell.removeAttribute('aria-disabled');
       cell.setAttribute('tabindex', '-1');
     }
     if (enabled) this._focus(this.focusIndex, false);

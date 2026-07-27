@@ -143,8 +143,12 @@ accessible name layer on top of the visual vocabulary.
 - Focus uses the roving-tabindex pattern: the board holds a single tab stop,
   and `ArrowUp` / `ArrowDown` / `ArrowLeft` / `ArrowRight` / `Home` / `End`
   move focus within it. Without this, a 10×10 board would create 100 tab stops.
-- Already-attacked cells set `aria-disabled="true"` and stay out of the focus
-  order.
+- Already-attacked cells are **not** `aria-disabled`. Clicking one is a real
+  action that reports `Bu xanaya artıq hücum edilib!`, so the control is not
+  disabled — it is a rejected move. Marking it disabled would both misdescribe
+  the behaviour and make the cell unclickable for assistive technology and test
+  tooling alike. Their state is already carried by the accessible name
+  (`A1 · vuruldu`); a non-ARIA `data-spent` attribute drives the styling.
 - The status bar message region is an `aria-live="polite"` container so combat
   results and placement errors are announced without stealing focus.
 

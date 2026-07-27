@@ -209,7 +209,7 @@ describe('BoardView keyboard access', () => {
     expect(view.cellAt(0).hasAttribute('role')).toBe(false);
   });
 
-  it('marks attacked cells as disabled and unfocusable', () => {
+  it('flags attacked cells for styling without disabling them', () => {
     const view = mounted();
     const states = new Array(100).fill('');
     states[4] = 'miss';
@@ -217,9 +217,27 @@ describe('BoardView keyboard access', () => {
     view.update({ states });
     view.setInteractive(true);
 
-    expect(view.cellAt(4).getAttribute('aria-disabled')).toBe('true');
-    expect(view.cellAt(4).getAttribute('tabindex')).toBe('-1');
-    expect(view.cellAt(5).getAttribute('aria-disabled')).toBe('true');
+    // Attacking a spent cell is a real action that reports a message, so the
+    // cell must never be aria-disabled.
+    expect(view.cellAt(4).dataset.spent).toBe('true');
+    expect(view.cellAt(5).dataset.spent).toBe('true');
+    expect(view.cellAt(4).hasAttribute('aria-disabled')).toBe(false);
+    expect(view.cellAt(5).hasAttribute('aria-disabled')).toBe(false);
+    expect(view.cellAt(4).getAttribute('role')).toBe('button');
+    expect(view.cellAt(4).getAttribute('aria-label')).toBe('E1 · yan keçdi');
+  });
+
+  it('clears the spent flag when a board resets', () => {
+    const view = mounted();
+    const states = new Array(100).fill('');
+    states[4] = 'miss';
+    view.update({ states });
+    view.setInteractive(true);
+    expect(view.cellAt(4).dataset.spent).toBe('true');
+
+    view.update({ states: new Array(100).fill('') });
+    view.setInteractive(true);
+    expect(view.cellAt(4).dataset.spent).toBeUndefined();
   });
 
   it('moves focus with the arrow keys', () => {

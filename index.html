@@ -1,19 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="az">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>See War</title>
-    <link rel="stylesheet" href="main.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sea War</title>
+  <link rel="stylesheet" href="main.css">
 </head>
 <body>
-    <div id="main"></div>
-    <input type="button" id="start" value="Başla">
-    <p id="hedefler"></p>
-    <script src="Variables.js"></script>
-    <script src="helper.js"></script>
-    <script src="index.js"></script>
-    <!--<script src="index2.js"></script>-->
+  <header class="header">
+    <h1 class="title">SEA WAR</h1>
+    <div class="scoreboard">
+      <span>Oyunçu: <strong data-score="player">0</strong></span>
+      <span>AI: <strong data-score="ai">0</strong></span>
+    </div>
+    <button class="btn btn--secondary" data-action="new-game">Yeni Oyun</button>
+  </header>
+
+  <main class="game" data-phase="placement">
+    <section class="board-wrapper">
+      <h2 class="board-label">SƏNİN LÖVHƏN</h2>
+      <div class="board" data-board="player"></div>
+    </section>
+    <section class="board-wrapper">
+      <h2 class="board-label">AI-NİN LÖVHƏSI</h2>
+      <div class="board" data-board="ai"></div>
+    </section>
+  </main>
+
+  <footer class="controls">
+    <div class="placement-controls" data-controls="placement">
+      <button class="btn btn--primary"   data-action="rotate">Fırlat (R)</button>
+      <button class="btn btn--secondary" data-action="auto-place">Avtomatik Yerləşdir</button>
+    </div>
+    <p class="message" data-message></p>
+  </footer>
+
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>

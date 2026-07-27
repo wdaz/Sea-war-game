@@ -1,158 +1,217 @@
 import { SHIP_SIZES } from './Board.js';
+import { el } from './ui/dom.js';
+import { injectSprite } from './ui/icons.js';
+import { boardStates } from './ui/cellState.js';
+import { BoardView } from './ui/BoardView.js';
+import { HudView } from './ui/HudView.js';
+import { ResultView } from './ui/ResultView.js';
+
+export function boardStatus(phase, side, { playerWon, shipsAlive }) {
+  if (phase === 'placement') {
+    return side === 'player'
+      ? { text: 'AKTİV', icon: 'radio-tower', tone: 'cyan' }
+      : { text: 'KİLİDLİ', icon: 'lock', tone: 'muted' };
+  }
+  if (phase === 'battle') {
+    return side === 'player'
+      ? { text: 'MÜDAFİƏ', icon: 'shield', tone: 'muted' }
+      : { text: 'HƏDƏF AKTİVDİR', icon: 'crosshair', tone: 'cyan' };
+  }
+  if (side === 'player') {
+    return { text: `QALDI: ${shipsAlive}`, icon: 'shield-check', tone: 'muted' };
+  }
+  return playerWon
+    ? { text: 'MƏHV EDİLDİ', icon: 'skull', tone: 'danger' }
+    : { text: `QALDI: ${shipsAlive}`, icon: 'shield', tone: 'muted' };
+}
+
+function shipsAlive(board) {
+  return board.ships.filter((s) => !s.isSunk()).length;
+}
 
 export class UI {
   constructor(game) {
     this.game = game;
-    this.gameEl      = document.querySelector('[data-phase]');
-    this.playerBoard = document.querySelector('[data-board="player"]');
-    this.aiBoard     = document.querySelector('[data-board="ai"]');
-    this.message     = document.querySelector('[data-message]');
-    this.scoreEls    = {
-      player: document.querySelector('[data-score="player"]'),
-      ai:     document.querySelector('[data-score="ai"]'),
+    this.message = '';
+    this.tone = 'neutral';
+    this.hud = new HudView();
+    this.result = new ResultView();
+    this.boards = {
+      player: new BoardView({ side: 'player', title: 'SƏNİN DONANMAN' }),
+      ai: new BoardView({ side: 'ai', title: 'RƏQİB SULARI' }),
     };
+  }
+
+  mount(root = document.getElementById('app')) {
+    if (!root) throw new Error('BattleShip: #app not found');
+
+    injectSprite(document);
+
+    this.gameEl = el('main', {
+      className: 'game',
+      dataset: { phase: this.game.phase },
+    },
+      el('div', { className: 'boards' },
+        this.boards.player.mount(),
+        this.boards.ai.mount()),
+      this.hud.mountOperations(),
+      this.hud.mountStatusBar(),
+      this.hud.mountLegend(),
+    );
+
+    root.append(this.hud.mountHeader(), this.gameEl, this.result.mount());
+
     this._bindStaticEvents();
-    this._initBoardEvents();
+    this._bindBoardEvents();
   }
 
   _bindStaticEvents() {
-    document.querySelector('[data-action="rotate"]').addEventListener('click', () => {
-      this.game.toggleDirection();
-      this._showMessage(
-        this.game.placementDirection === 'horizontal' ? 'İstiqamət: Üfüqi' : 'İstiqamət: Şaquli'
-      );
-    });
-
-    document.querySelector('[data-action="auto-place"]').addEventListener('click', () => {
-      this.game.autoPlacePlayer();
-      this.render();
-    });
-
-    document.querySelector('[data-action="new-game"]').addEventListener('click', () => {
+    const restart = () => {
       this.game.restart();
+      this.message = '';
+      this.tone = 'neutral';
       this.render();
-    });
+    };
+
+    this.hud.header.querySelector('[data-action="new-game"]')
+      .addEventListener('click', restart);
+    this.result.root.querySelector('[data-action="restart"]')
+      .addEventListener('click', restart);
+
+    this.hud.operations.querySelector('[data-action="rotate"]')
+      .addEventListener('click', () => this._rotate());
+
+    this.hud.operations.querySelector('[data-action="auto-place"]')
+      .addEventListener('click', () => {
+        this.game.autoPlacePlayer();
+        this.render();
+      });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'r' || e.key === 'R') {
-        this.game.toggleDirection();
-        this._showMessage(
-          this.game.placementDirection === 'horizontal' ? 'İstiqamət: Üfüqi' : 'İstiqamət: Şaquli'
-        );
-      }
+      if (e.key === 'r' || e.key === 'R') this._rotate();
     });
   }
 
-  _initBoardEvents() {
-    this.playerBoard.addEventListener('click', (e) => {
+  _rotate() {
+    this.game.toggleDirection();
+    this._setMessage(
+      this.game.placementDirection === 'horizontal'
+        ? 'İstiqamət: Üfüqi'
+        : 'İstiqamət: Şaquli',
+    );
+    this.render();
+  }
+
+  _bindBoardEvents() {
+    const playerBoard = this.boards.player.board;
+    const aiBoard = this.boards.ai.board;
+
+    playerBoard.addEventListener('click', (e) => {
       const cell = e.target.closest('.cell');
       if (!cell || this.game.phase !== 'placement') return;
-      this._handlePlacement(parseInt(cell.dataset.index));
+      this._handlePlacement(Number(cell.dataset.index));
     });
 
-    this.playerBoard.addEventListener('mouseover', (e) => {
+    playerBoard.addEventListener('mouseover', (e) => {
       const cell = e.target.closest('.cell');
       if (!cell || this.game.phase !== 'placement') return;
-      this._showPreview(parseInt(cell.dataset.index));
+      this._showPreview(Number(cell.dataset.index));
     });
 
-    this.playerBoard.addEventListener('mouseleave', () => {
-      if (this.game.phase !== 'placement') return;
-      this._clearPreview();
+    playerBoard.addEventListener('mouseleave', () => {
+      this.boards.player.clearPreview();
     });
 
-    this.aiBoard.addEventListener('click', (e) => {
+    aiBoard.addEventListener('click', (e) => {
       const cell = e.target.closest('.cell');
       if (!cell || this.game.phase !== 'battle') return;
-      this._handleAttack(parseInt(cell.dataset.index));
+      this._handleAttack(Number(cell.dataset.index));
     });
   }
 
   render() {
-    this._renderBoard(this.playerBoard, this.game.playerBoard, false);
-    this._renderBoard(this.aiBoard,     this.game.aiBoard,     true);
-    this.gameEl.dataset.phase        = this.game.phase;
-    this.scoreEls.player.textContent = this.game.scores.player;
-    this.scoreEls.ai.textContent     = this.game.scores.ai;
-    this._updateMessage();
+    const { phase, scores } = this.game;
+    const playerWon = this.game.aiBoard.allSunk();
+
+    this.gameEl.dataset.phase = phase;
+
+    this.boards.player.update({
+      states: boardStates(this.game.playerBoard, false),
+      status: boardStatus(phase, 'player', {
+        playerWon,
+        shipsAlive: shipsAlive(this.game.playerBoard),
+      }),
+    });
+
+    this.boards.ai.update({
+      states: boardStates(this.game.aiBoard, true),
+      status: boardStatus(phase, 'ai', {
+        playerWon,
+        shipsAlive: shipsAlive(this.game.aiBoard),
+      }),
+    });
+
+    this.boards.player.setInteractive(phase === 'placement');
+    this.boards.ai.setInteractive(phase === 'battle');
+
+    this.hud.update({
+      phase,
+      scores,
+      nextShipSize: SHIP_SIZES[this.game.currentShipIndex],
+      shipsRemaining: SHIP_SIZES.length - this.game.currentShipIndex,
+      direction: this.game.placementDirection,
+      message: this.message,
+      tone: this.tone,
+    });
+
+    this.result.update({ phase, playerWon, scores });
   }
 
-  _cellState(i, boardData, isAI) {
-    const attacked = boardData.attacked.has(i);
-    const ship     = boardData.ships.find(s => s.occupies(i));
-    if (attacked && ship) return ship.isSunk() ? 'sunk' : 'hit';
-    if (attacked) return 'miss';
-    if (!isAI && ship) return 'ship';
-    return '';
-  }
-
-  _renderBoard(boardEl, boardData, isAI) {
-    let cells = boardEl.children;
-    for (let i = 0; i < 100; i++) {
-      let cell = cells[i];
-      if (!cell) {
-        cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.dataset.index = i;
-        boardEl.appendChild(cell);
-      }
-      const newState = this._cellState(i, boardData, isAI);
-      if (cell.dataset.state !== newState) {
-        cell.className = 'cell';
-        if (newState === 'sunk') {
-          cell.classList.add('hit', 'sunk');
-        } else if (newState) {
-          cell.classList.add(newState);
-        }
-        cell.dataset.state = newState;
-      }
-    }
+  _setMessage(text, tone = 'neutral') {
+    this.message = text;
+    this.tone = tone;
   }
 
   _handlePlacement(index) {
-    const success = this.game.placePlayerShip(index);
-    if (!success) {
-      this._showMessage('Buraya yerləşdirilə bilməz!');
+    if (!this.game.placePlayerShip(index)) {
+      this._setMessage('Buraya yerləşdirilə bilməz!', 'danger');
+      this.render();
       return;
     }
-    this._clearPreview();
-    this.render();
+
+    this.boards.player.clearPreview();
+
     if (this.game.phase === 'battle') {
-      this._showMessage('Bütün gəmilər yerləşdirildi. Döyüş başlayır!');
+      this._setMessage('Bütün gəmilər yerləşdirildi. Döyüş başlayır!');
     } else {
-      const size      = SHIP_SIZES[this.game.currentShipIndex];
+      const size = SHIP_SIZES[this.game.currentShipIndex];
       const remaining = SHIP_SIZES.length - this.game.currentShipIndex;
-      this._showMessage(`${size} xanalı gəmini yerləşdir (qalan: ${remaining})`);
+      this._setMessage(`${size} xanalı gəmini yerləşdir (qalan: ${remaining})`);
     }
+    this.render();
   }
 
   _handleAttack(index) {
     const result = this.game.playerAttack(index);
     if (!result || result.player === 'already-attacked') {
-      this._showMessage('Bu xanaya artıq hücum edilib!');
+      this._setMessage('Bu xanaya artıq hücum edilib!', 'danger');
+      this.render();
       return;
+    }
+
+    if (result.winner === 'player') {
+      this._setMessage('Təbrik edirik! Siz qalibisiniz! 🎉');
+    } else if (result.winner === 'ai') {
+      this._setMessage('AI qazandı. Yenidən cəhd edin!', 'danger');
+    } else {
+      const playerMsg = result.player === 'hit' ? 'Vuruldu!' : 'Keçdi.';
+      const aiMsg = result.ai === 'hit' ? 'AI vurdu!' : 'AI keçdi.';
+      this._setMessage(`${playerMsg} ${aiMsg}`);
     }
     this.render();
-    this._showResult(result);
-  }
-
-  _showResult(result) {
-    if (result.winner === 'player') {
-      this._showMessage('Təbrik edirik! Siz qalibisiniz! 🎉');
-      return;
-    }
-    if (result.winner === 'ai') {
-      this._showMessage('AI qazandı. Yenidən cəhd edin!');
-      return;
-    }
-    const playerMsg = result.player === 'hit' ? 'Vuruldu!' : 'Keçdi.';
-    const aiMsg     = result.ai    === 'hit' ? 'AI vurdu!'  : 'AI keçdi.';
-    this._showMessage(`${playerMsg} ${aiMsg}`);
   }
 
   _showPreview(index) {
-    if (this.game.phase !== 'placement') return;
-    this._clearPreview();
     const size = SHIP_SIZES[this.game.currentShipIndex];
     if (!size) return;
 
@@ -168,36 +227,11 @@ export class UI {
         break;
       }
       cells.push(ci);
-      if (this.game.playerBoard._isOccupiedOrAdjacent(ci)) {
-        isValid = false;
-      }
+      if (this.game.playerBoard._isOccupiedOrAdjacent(ci)) isValid = false;
     }
 
-    if (cells.length !== size) {
-      isValid = false;
-    }
+    if (cells.length !== size) isValid = false;
 
-    for (const cellIndex of cells) {
-      const el = this.playerBoard.querySelector(`[data-index="${cellIndex}"]`);
-      if (el) el.classList.add(isValid ? 'preview' : 'preview--bad');
-    }
-  }
-
-  _clearPreview() {
-    this.playerBoard.querySelectorAll('.preview, .preview--bad').forEach(el => {
-      el.classList.remove('preview', 'preview--bad');
-    });
-  }
-
-  _updateMessage() {
-    if (this.game.phase === 'placement') {
-      const size      = SHIP_SIZES[this.game.currentShipIndex];
-      const remaining = SHIP_SIZES.length - this.game.currentShipIndex;
-      this._showMessage(size ? `${size} xanalı gəmini yerləşdir (qalan: ${remaining})` : '');
-    }
-  }
-
-  _showMessage(text) {
-    this.message.textContent = text;
+    this.boards.player.setPreview(cells, isValid);
   }
 }

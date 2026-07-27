@@ -43,3 +43,59 @@ test.describe('Gameover and scores', () => {
     await expect(page.locator('.game')).toHaveAttribute('data-phase', 'placement');
   });
 });
+
+test.describe('Result panel', () => {
+  const placements = [
+    0.001, 0.1, 0.201, 0.1, 0.251, 0.1, 0.401, 0.1, 0.441, 0.1,
+    0.481, 0.1, 0.091, 0.1, 0.291, 0.1, 0.601, 0.1, 0.661, 0.1,
+    0.001, 0.1, 0.201, 0.1, 0.251, 0.1, 0.401, 0.1, 0.441, 0.1,
+    0.481, 0.1, 0.091, 0.1, 0.291, 0.1, 0.601, 0.1, 0.661, 0.1,
+  ];
+  const aiMisses = Array.from({ length: 30 }, () => 0.999);
+  const winningCells = [0, 1, 2, 3, 20, 21, 22, 25, 26, 27, 40, 41, 44, 45, 48, 49, 9, 29, 60, 66];
+
+  async function playToVictory(page) {
+    await page.addInitScript((randomValues) => {
+      let index = 0;
+      const originalRandom = Math.random;
+      Math.random = () => randomValues[index++] ?? originalRandom();
+    }, [...placements, ...aiMisses]);
+
+    await page.goto('/');
+    await page.click('[data-action="auto-place"]');
+    for (const cell of winningCells) {
+      await page.click(`[data-board="ai"] [data-index="${cell}"]`);
+    }
+  }
+
+  test('is hidden until the game ends', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.result')).toBeHidden();
+  });
+
+  test('shows victory copy over the still-visible boards', async ({ page }) => {
+    await playToVictory(page);
+
+    const result = page.locator('.result');
+    await expect(result).toBeVisible();
+    await expect(result).toHaveAttribute('data-outcome', 'victory');
+    await expect(result.locator('.result__title')).toHaveText('QƏLƏBƏ');
+    await expect(result.locator('.result__score')).toHaveText('1 — 0');
+    await expect(page.locator('[data-board="ai"]')).toBeVisible();
+  });
+
+  test('reports the AI fleet as destroyed', async ({ page }) => {
+    await playToVictory(page);
+    await expect(page.locator('.board-panel[data-side="ai"] .board-status__text'))
+      .toHaveText('MƏHV EDİLDİ');
+  });
+
+  test('restart keeps the score and returns to placement', async ({ page }) => {
+    await playToVictory(page);
+    await page.click('[data-action="restart"]');
+
+    await expect(page.locator('.game')).toHaveAttribute('data-phase', 'placement');
+    await expect(page.locator('[data-score="player"]')).toHaveText('1');
+    await expect(page.locator('.result')).toBeHidden();
+  });
+});

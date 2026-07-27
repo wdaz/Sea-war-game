@@ -62,9 +62,13 @@ test.describe('Accessibility', () => {
 
   test('keeps decorative icons out of the accessibility tree', async ({ page }) => {
     await page.goto('/');
-    const marked = await page.locator('svg').count();
-    const hidden = await page.locator('svg[aria-hidden="true"]').count();
-    expect(hidden).toBe(marked);
+
+    // The sprite is hidden outright; every rendered icon is aria-hidden.
+    await expect(page.locator('#battleship-sprite')).toHaveAttribute('hidden', '');
+
+    const unmarked = await page.locator('svg:not([aria-hidden="true"])')
+      .evaluateAll((nodes) => nodes.filter((n) => n.id !== 'battleship-sprite').length);
+    expect(unmarked).toBe(0);
   });
 
   test('disables animation under reduced motion', async ({ page }) => {

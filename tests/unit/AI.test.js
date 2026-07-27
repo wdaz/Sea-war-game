@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { AI } from '../../src/AI.js';
 import { Board } from '../../src/Board.js';
+import { Ship } from '../../src/Ship.js';
 
 describe('AI', () => {
   let ai, board;
@@ -115,5 +116,96 @@ describe('AI', () => {
     ai.registerResult(30, 'miss', board);
     expect(ai.direction).toBeNull();
     expect(ai.lastHit).toBeNull();
+  });
+});
+
+describe('AI difficulty loading', () => {
+  beforeEach(() => localStorage.clear());
+
+  test('falls back to 0.5 when nothing is stored', () => {
+    expect(new AI().difficulty).toBe(0.5);
+  });
+
+  // Infinity is corruption, not "very hard": clamping it to the maximum would
+  // hand the player the strongest AI because of a bad write.
+  test.each(['abc', '', 'null', 'undefined', 'NaN', 'Infinity', '-Infinity', '1e999'])(
+    'falls back to 0.5 for the unusable value %p',
+    (stored) => {
+      localStorage.setItem('seawar_ai_difficulty', stored);
+      expect(new AI().difficulty).toBe(0.5);
+    },
+  );
+
+  // A finite out-of-range number reads as a deliberate hand-edit, so it is
+  // clamped into the ladder instead of discarded.
+  test.each([
+    ['5', 1.0],
+    ['2.5', 1.0],
+    ['-5', 0.1],
+    ['0', 0.1],
+    ['0.05', 0.1],
+  ])('clamps the out-of-range value %p to %p', (stored, expected) => {
+    localStorage.setItem('seawar_ai_difficulty', stored);
+    expect(new AI().difficulty).toBe(expected);
+  });
+
+  test('keeps a valid stored value', () => {
+    localStorage.setItem('seawar_ai_difficulty', '0.8');
+    expect(new AI().difficulty).toBe(0.8);
+  });
+
+  test('a corrupted value still adapts after a game', () => {
+    localStorage.setItem('seawar_ai_difficulty', 'abc');
+    const fresh = new AI();
+    fresh.adjustDifficulty(true);
+    expect(fresh.difficulty).toBeCloseTo(0.6);
+  });
+});
+
+describe('AI forgets a sunk ship', () => {
+  let sunkAi, sunkBoard, ship;
+
+  beforeEach(() => {
+    localStorage.clear();
+    sunkAi = new AI();
+    sunkAi.difficulty = 1.0;
+    sunkBoard = new Board();
+    ship = new Ship(2);
+    sunkBoard.placeShip(ship, 0, 'horizontal'); // A1, B1
+  });
+
+  function sink() {
+    sunkBoard.receiveAttack(0);
+    sunkAi.registerResult(0, 'hit', sunkBoard);
+    sunkBoard.receiveAttack(1);
+    sunkAi.registerResult(1, 'hit', sunkBoard);
+  }
+
+  test('drops queued cells touching the sunk ship', () => {
+    sink();
+    // Ships may never be adjacent, so every cell around a sunk one is water.
+    expect(sunkAi.huntQueue).toEqual([]);
+  });
+
+  test('resets lastHit and direction after a sink', () => {
+    sink();
+    expect(sunkAi.lastHit).toBeNull();
+    expect(sunkAi.direction).toBeNull();
+  });
+
+  test('keeps queued cells that belong to another target', () => {
+    sunkAi.huntQueue = [77];
+    sink();
+    expect(sunkAi.huntQueue).toEqual([77]);
+  });
+
+  test('still hunts a ship that is only damaged', () => {
+    const board = new Board();
+    board.placeShip(new Ship(3), 40, 'horizontal'); // A5, B5, C5
+    board.receiveAttack(41);
+    sunkAi.registerResult(41, 'hit', board);
+
+    expect(sunkAi.huntQueue.length).toBeGreaterThan(0);
+    expect(sunkAi.lastHit).toBe(41);
   });
 });

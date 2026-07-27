@@ -35,6 +35,9 @@ export class UI {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'r' || e.key === 'R') {
         this.game.toggleDirection();
+        this._showMessage(
+          this.game.placementDirection === 'horizontal' ? 'İstiqamət: Üfüqi' : 'İstiqamət: Şaquli'
+        );
       }
     });
   }

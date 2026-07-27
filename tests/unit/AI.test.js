@@ -68,6 +68,17 @@ describe('AI', () => {
     expect(ai.huntQueue.length).toBe(0);
   });
 
+  test('lastHit is updated after hit when difficulty < 0.4', () => {
+    ai.difficulty = 0.3;
+    ai.lastHit = 10;
+    ai.direction = 'horizontal';
+
+    ai.registerResult(55, 'hit', board);
+
+    expect(ai.lastHit).toBe(55);
+    expect(ai.direction).toBeNull();
+  });
+
   test('chooseAttack uses huntQueue when difficulty >= 0.4', () => {
     ai.difficulty = 0.5;
     ai.huntQueue = [42];

@@ -77,15 +77,11 @@ export class Game {
     const scores = this.scores;
     this.playerBoard = new Board();
     this.aiBoard = new Board();
-    this.clearQueue();
+    this.ai.clearQueue();
     this.phase = 'placement';
     this.currentShipIndex = 0;
     this.placementDirection = 'horizontal';
     this.scores = scores;
     this.aiBoard.autoPlace();
-  }
-
-  clearQueue() {
-    this.ai.clearQueue();
   }
 }

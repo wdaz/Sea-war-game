@@ -156,15 +156,30 @@ export class UI {
     const size = SHIP_SIZES[this.game.currentShipIndex];
     if (!size) return;
 
-    const col          = index % 10;
-    const row          = Math.floor(index / 10);
     const isHorizontal = this.game.placementDirection === 'horizontal';
-    const outOfBounds  = isHorizontal ? col + size > 10 : row + size > 10;
+    const targetRow = Math.floor(index / 10);
+    const cells = [];
+    let isValid = true;
 
     for (let i = 0; i < size; i++) {
-      const ci  = isHorizontal ? index + i : index + i * 10;
-      const el  = this.playerBoard.querySelector(`[data-index="${ci}"]`);
-      if (el) el.classList.add(outOfBounds ? 'preview--bad' : 'preview');
+      const ci = isHorizontal ? index + i : index + i * 10;
+      if (ci > 99 || (isHorizontal && Math.floor(ci / 10) !== targetRow)) {
+        isValid = false;
+        break;
+      }
+      cells.push(ci);
+      if (this.game.playerBoard._isOccupiedOrAdjacent(ci)) {
+        isValid = false;
+      }
+    }
+
+    if (cells.length !== size) {
+      isValid = false;
+    }
+
+    for (const cellIndex of cells) {
+      const el = this.playerBoard.querySelector(`[data-index="${cellIndex}"]`);
+      if (el) el.classList.add(isValid ? 'preview' : 'preview--bad');
     }
   }
 

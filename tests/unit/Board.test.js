@@ -35,6 +35,16 @@ describe('Board', () => {
     expect(board.placeShip(shipB, 2, 'horizontal')).toBe(false);
   });
 
+  test('placeShip does not mutate ship on failed placement', () => {
+    const shipA = new Ship(2);
+    board.placeShip(shipA, 0, 'horizontal');
+    const shipB = new Ship(2);
+
+    expect(board.placeShip(shipB, 2, 'horizontal')).toBe(false);
+    expect(shipB.startIndex).toBeNull();
+    expect(shipB.direction).toBeNull();
+  });
+
   test('receiveAttack returns hit when ship is at index', () => {
     const ship = new Ship(3);
     board.placeShip(ship, 0, 'horizontal');

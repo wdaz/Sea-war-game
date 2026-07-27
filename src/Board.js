@@ -15,13 +15,16 @@ export class Board {
       if (Math.floor(index / 10) + ship.size > 10) return false;
     }
 
-    ship.place(index, direction);
-    const cells = ship.getCells();
+    const cells = [];
+    for (let i = 0; i < ship.size; i++) {
+      cells.push(direction === 'horizontal' ? index + i : index + i * 10);
+    }
 
     for (const cell of cells) {
       if (this._isOccupiedOrAdjacent(cell)) return false;
     }
 
+    ship.place(index, direction);
     this.ships.push(ship);
     return true;
   }
@@ -59,7 +62,11 @@ export class Board {
     this.ships = [];
     for (const size of SHIP_SIZES) {
       let placed = false;
+      let attempts = 0;
       while (!placed) {
+        if (attempts++ >= 10000) {
+          throw new Error('Failed to auto-place ships');
+        }
         const index = Math.floor(Math.random() * 100);
         const direction = Math.random() < 0.5 ? 'horizontal' : 'vertical';
         placed = this.placeShip(new Ship(size), index, direction);

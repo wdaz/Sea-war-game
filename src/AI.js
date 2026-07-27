@@ -31,7 +31,11 @@ export class AI {
       this.direction = null;
       return;
     }
-    if (this.difficulty < 0.4) return;
+    if (this.difficulty < 0.4) {
+      this.lastHit = index;
+      this.direction = null;
+      return;
+    }
 
     if (this.difficulty > 0.7 && this.lastHit !== null) {
       const row = Math.floor(index / 10);

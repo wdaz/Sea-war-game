@@ -12,6 +12,7 @@
   "devDependencies": {
     "@playwright/test": "^1.44.0",
     "jsdom": "^29.1.1",
+    "lucide-static": "^1.27.0",
     "serve": "^14.2.3",
     "vitest": "^1.6.0"
   }

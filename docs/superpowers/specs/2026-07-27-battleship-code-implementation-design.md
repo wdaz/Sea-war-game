@@ -31,7 +31,7 @@ state indicator.
 | Question | Decision |
 |---|---|
 | Scope | Full parity with `DESIGN.md` |
-| Assets | Fully self-contained: inline SVG sprite, system font stacks, no CDN |
+| Assets | Fully self-contained: inline SVG sprite with vendored Lucide paths, system font stacks, no CDN |
 | Structure | Full JS render; `index.html` holds only the root container |
 | Testing | jsdom unit tests plus extended Playwright coverage |
 | Render strategy | `mount()` once, then `update(state)` patches |
@@ -93,6 +93,13 @@ CELL_MARKER                { ship, hit, sunk, miss, preview, 'preview--bad' } ->
 Icons required: `radar`, `crosshair`, `circle-dot`, `circle`, `skull`,
 `triangle-alert`, `lock`, `shield`, `shield-check`, `radio-tower`, `target`,
 `ship`, `refresh-cw`, `rotate-cw`, `wand-sparkles`, `trophy`.
+
+These are the real Lucide glyphs, matching the Pencil document, which specifies
+`library: "lucide"`. Their path data is vendored into `GLYPHS` by
+`scripts/build-icons.mjs`, which reads the `lucide-static` devDependency. Lucide
+is ISC licensed. Vendoring keeps the runtime dependency-free while preserving
+parity with the design; hand-drawn substitutes were tried first and rejected
+because they did not match the design.
 
 **`cellState.js`** — extracted from `UI._cellState`.
 

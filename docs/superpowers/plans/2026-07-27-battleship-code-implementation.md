@@ -220,7 +220,7 @@ Expected: FAIL — `Failed to resolve import "../../../src/ui/icons.js"`
 
 - [ ] **Step 7: Implement the sprite**
 
-Create `src/ui/icons.js`. These are hand-authored 24×24 stroke glyphs standing in for the named Lucide icons, so the project stays free of external assets:
+Create `src/ui/icons.js`. The `GLYPHS` table holds the real Lucide path data, vendored inline so the runtime needs no dependency. Generate it with `scripts/build-icons.mjs` from the `lucide-static` devDependency rather than writing paths by hand — hand-drawn approximations do not match the Pencil document, which uses `library: "lucide"`:
 
 ```js
 const SVG_NS = 'http://www.w3.org/2000/svg';

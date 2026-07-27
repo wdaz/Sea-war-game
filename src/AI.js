@@ -4,6 +4,8 @@ export class AI {
       localStorage.getItem('seawar_ai_difficulty') ?? '0.5'
     );
     this.huntQueue = [];
+    this.lastHit = null;
+    this.direction = null;
   }
 
   chooseAttack(board) {
@@ -24,21 +26,55 @@ export class AI {
   }
 
   registerResult(index, result, board) {
-    if (result !== 'hit' || this.difficulty < 0.4) return;
+    if (result !== 'hit') {
+      this.lastHit = null;
+      this.direction = null;
+      return;
+    }
+    if (this.difficulty < 0.4) return;
+
+    if (this.difficulty > 0.7 && this.lastHit !== null) {
+      const row = Math.floor(index / 10);
+      const col = index % 10;
+      const lastRow = Math.floor(this.lastHit / 10);
+      const lastCol = this.lastHit % 10;
+      if (row === lastRow) {
+        this.direction = 'horizontal';
+      } else if (col === lastCol) {
+        this.direction = 'vertical';
+      }
+    }
 
     const row = Math.floor(index / 10);
     const col = index % 10;
     const candidates = [];
-    if (row > 0) candidates.push(index - 10);
-    if (row < 9) candidates.push(index + 10);
-    if (col > 0) candidates.push(index - 1);
-    if (col < 9) candidates.push(index + 1);
+
+    if (this.difficulty > 0.7 && this.direction === 'horizontal') {
+      if (col > 0) candidates.push(index - 1);
+      if (col < 9) candidates.push(index + 1);
+    } else if (this.difficulty > 0.7 && this.direction === 'vertical') {
+      if (row > 0) candidates.push(index - 10);
+      if (row < 9) candidates.push(index + 10);
+    } else {
+      if (row > 0) candidates.push(index - 10);
+      if (row < 9) candidates.push(index + 10);
+      if (col > 0) candidates.push(index - 1);
+      if (col < 9) candidates.push(index + 1);
+    }
 
     for (const adj of candidates) {
       if (!board.attacked.has(adj) && !this.huntQueue.includes(adj)) {
         this.huntQueue.push(adj);
       }
     }
+
+    this.lastHit = index;
+  }
+
+  clearQueue() {
+    this.huntQueue = [];
+    this.lastHit = null;
+    this.direction = null;
   }
 
   adjustDifficulty(playerWon) {
@@ -48,6 +84,6 @@ export class AI {
       this.difficulty = Math.max(0.1, parseFloat((this.difficulty - 0.1).toFixed(1)));
     }
     localStorage.setItem('seawar_ai_difficulty', String(this.difficulty));
-    this.huntQueue = [];
+    this.clearQueue();
   }
 }

@@ -73,4 +73,36 @@ describe('AI', () => {
     ai.huntQueue = [42];
     expect(ai.chooseAttack(board)).toBe(42);
   });
+
+  test('direction tracking sets horizontal after 2 hits on same row (difficulty > 0.7)', () => {
+    ai.difficulty = 0.8;
+    ai.registerResult(10, 'hit', board);
+    expect(ai.direction).toBeNull();
+    ai.registerResult(11, 'hit', board);
+    expect(ai.direction).toBe('horizontal');
+  });
+
+  test('direction tracking sets vertical after 2 hits on same column (difficulty > 0.7)', () => {
+    ai.difficulty = 0.8;
+    ai.registerResult(10, 'hit', board);
+    ai.registerResult(20, 'hit', board);
+    expect(ai.direction).toBe('vertical');
+  });
+
+  test('direction tracking does not activate at difficulty 0.5', () => {
+    ai.difficulty = 0.5;
+    ai.registerResult(10, 'hit', board);
+    ai.registerResult(11, 'hit', board);
+    expect(ai.direction).toBeNull();
+  });
+
+  test('miss resets direction tracking', () => {
+    ai.difficulty = 0.8;
+    ai.registerResult(10, 'hit', board);
+    ai.registerResult(20, 'hit', board);
+    expect(ai.direction).toBe('vertical');
+    ai.registerResult(30, 'miss', board);
+    expect(ai.direction).toBeNull();
+    expect(ai.lastHit).toBeNull();
+  });
 });

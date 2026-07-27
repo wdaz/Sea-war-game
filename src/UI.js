@@ -12,6 +12,7 @@ export class UI {
       ai:     document.querySelector('[data-score="ai"]'),
     };
     this._bindStaticEvents();
+    this._initBoardEvents();
   }
 
   _bindStaticEvents() {
@@ -42,6 +43,31 @@ export class UI {
     });
   }
 
+  _initBoardEvents() {
+    this.playerBoard.addEventListener('click', (e) => {
+      const cell = e.target.closest('.cell');
+      if (!cell || this.game.phase !== 'placement') return;
+      this._handlePlacement(parseInt(cell.dataset.index));
+    });
+
+    this.playerBoard.addEventListener('mouseover', (e) => {
+      const cell = e.target.closest('.cell');
+      if (!cell || this.game.phase !== 'placement') return;
+      this._showPreview(parseInt(cell.dataset.index));
+    });
+
+    this.playerBoard.addEventListener('mouseleave', () => {
+      if (this.game.phase !== 'placement') return;
+      this._clearPreview();
+    });
+
+    this.aiBoard.addEventListener('click', (e) => {
+      const cell = e.target.closest('.cell');
+      if (!cell || this.game.phase !== 'battle') return;
+      this._handleAttack(parseInt(cell.dataset.index));
+    });
+  }
+
   render() {
     this._renderBoard(this.playerBoard, this.game.playerBoard, false);
     this._renderBoard(this.aiBoard,     this.game.aiBoard,     true);
@@ -51,36 +77,35 @@ export class UI {
     this._updateMessage();
   }
 
+  _cellState(i, boardData, isAI) {
+    const attacked = boardData.attacked.has(i);
+    const ship     = boardData.ships.find(s => s.occupies(i));
+    if (attacked && ship) return ship.isSunk() ? 'sunk' : 'hit';
+    if (attacked) return 'miss';
+    if (!isAI && ship) return 'ship';
+    return '';
+  }
+
   _renderBoard(boardEl, boardData, isAI) {
-    boardEl.innerHTML = '';
+    let cells = boardEl.children;
     for (let i = 0; i < 100; i++) {
-      const cell      = document.createElement('div');
-      cell.className  = 'cell';
-      cell.dataset.index = i;
-
-      const attacked = boardData.attacked.has(i);
-      const ship     = boardData.ships.find(s => s.occupies(i));
-
-      if (attacked && ship) {
-        cell.classList.add('hit');
-        if (ship.isSunk()) cell.classList.add('sunk');
-      } else if (attacked) {
-        cell.classList.add('miss');
-      } else if (!isAI && ship) {
-        cell.classList.add('ship');
+      let cell = cells[i];
+      if (!cell) {
+        cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+        boardEl.appendChild(cell);
       }
-
-      if (!isAI && this.game.phase === 'placement') {
-        cell.addEventListener('click',      () => this._handlePlacement(i));
-        cell.addEventListener('mouseenter', () => this._showPreview(i));
-        cell.addEventListener('mouseleave', () => this._clearPreview());
+      const newState = this._cellState(i, boardData, isAI);
+      if (cell.dataset.state !== newState) {
+        cell.className = 'cell';
+        if (newState === 'sunk') {
+          cell.classList.add('hit', 'sunk');
+        } else if (newState) {
+          cell.classList.add(newState);
+        }
+        cell.dataset.state = newState;
       }
-
-      if (isAI && this.game.phase === 'battle') {
-        cell.addEventListener('click', () => this._handleAttack(i));
-      }
-
-      boardEl.appendChild(cell);
     }
   }
 

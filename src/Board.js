@@ -9,14 +9,14 @@ export class Board {
   }
 
   placeShip(ship, index, direction) {
-    ship.place(index, direction);
-    const cells = ship.getCells();
-
     if (direction === 'horizontal') {
       if (index % 10 + ship.size > 10) return false;
     } else {
       if (Math.floor(index / 10) + ship.size > 10) return false;
     }
+
+    ship.place(index, direction);
+    const cells = ship.getCells();
 
     for (const cell of cells) {
       if (this._isOccupiedOrAdjacent(cell)) return false;

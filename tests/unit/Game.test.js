@@ -1,5 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { Game } from '../../src/Game.js';
+import { Ship } from '../../src/Ship.js';
+import { Board, SHIP_SIZES } from '../../src/Board.js';
 
 describe('Game', () => {
   let game;
@@ -79,5 +81,31 @@ describe('Game', () => {
     game.placePlayerShip(0);
     game.restart();
     expect(game.currentShipIndex).toBe(0);
+  });
+
+  test('playerAttack sets winner to player when all AI ships sunk', () => {
+    game.autoPlacePlayer();
+    game.aiBoard = new Board();
+    game.aiBoard.placeShip(new Ship(1), 99, 'horizontal');
+    game.phase = 'battle';
+    const result = game.playerAttack(99);
+    expect(result.winner).toBe('player');
+    expect(game.phase).toBe('gameover');
+    expect(game.scores.player).toBe(1);
+  });
+
+  test('playerAttack sets winner to ai when all player ships sunk', () => {
+    game.autoPlacePlayer();
+    for (const ship of game.playerBoard.ships) {
+      for (const cell of ship.getCells()) {
+        game.playerBoard.attacked.add(cell);
+        ship.hit(cell);
+      }
+    }
+    game.phase = 'battle';
+    const result = game.playerAttack(0);
+    expect(result.winner).toBe('ai');
+    expect(game.phase).toBe('gameover');
+    expect(game.scores.ai).toBe(1);
   });
 });

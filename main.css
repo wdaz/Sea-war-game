@@ -73,7 +73,7 @@ body {
   position: relative;
   transition: background .1s;
 }
-[data-board="ai"] .cell { cursor: crosshair; }
+.game[data-phase="battle"] [data-board="ai"] .cell { cursor: crosshair; }
 [data-board="ai"] .cell:hover { background: color-mix(in srgb, var(--clr-miss) 30%, var(--clr-sea)); }
 [data-board="ai"] .cell.hit,
 [data-board="ai"] .cell.miss { cursor: not-allowed; }

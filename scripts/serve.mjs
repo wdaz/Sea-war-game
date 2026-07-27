@@ -106,6 +106,25 @@ const server = createServer(async (req, res) => {
     .pipe(res);
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(
+      `Port ${PORT} is already in use. Stop whatever is listening there, `
+      + `or pick another port:\n  npm run serve -- --port ${PORT + 1}`,
+    );
+    process.exit(1);
+  }
+  if (err.code === 'EACCES') {
+    console.error(`Port ${PORT} needs elevated privileges. Use a port above 1024.`);
+    process.exit(1);
+  }
+  throw err;
+});
+
 server.listen(PORT, () => {
   console.log(`Serving ${ROOT} on http://localhost:${PORT}`);
 });
+
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => server.close(() => process.exit(0)));
+}

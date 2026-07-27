@@ -75,18 +75,26 @@ separators. It must never be the only boundary of an interactive element.
 
 | Role | Font | Size / weight | Usage |
 |---|---|---:|---|
-| `display-xl` | Rajdhani | `42 / 700` | Result headline |
-| `display-lg` | Rajdhani | `28 / 700` | Design system title |
-| `display-md` | Rajdhani | `24 / 700` | Desktop wordmark |
-| `heading` | Rajdhani | `20 / 700` | Section headings |
-| `heading-sm` | Rajdhani | `18 / 700` | Board titles, current ship |
-| `heading-xs` | Rajdhani | `16 / 700` | Mobile wordmark and board titles |
+| `display-xl` | Saira Condensed | `42 / 700` | Result headline |
+| `display-lg` | Saira Condensed | `28 / 700` | Design system title |
+| `display-md` | Saira Condensed | `24 / 700` | Desktop wordmark |
+| `heading` | Saira Condensed | `20 / 700` | Section headings |
+| `heading-sm` | Saira Condensed | `18 / 700` | Board titles, current ship |
+| `heading-xs` | Saira Condensed | `16 / 700` | Mobile wordmark and board titles |
 | `body` | Inter | `14 / 400–500` | Status and explanatory copy |
 | `body-sm` | Inter | `12 / 400–700` | Buttons, descriptions, mobile status |
 | `data-lg` | IBM Plex Mono | `24 / 700` | Result score |
 | `data` | IBM Plex Mono | `12–16 / 600–700` | Score, tactical metadata |
 | `data-sm` | IBM Plex Mono | `11 / 600` | Eyebrows, legends, token labels |
 | `data-xs` | IBM Plex Mono | `10 / 400` | Coordinate rulers only |
+
+The display family is **Saira Condensed**, not the Rajdhani originally chosen.
+Rajdhani has no glyph for `U+018F`/`U+0259` (`Ə`/`ə`), so every heading
+containing them — `SƏNİN DONANMAN`, `RƏQİB SULARI`, `QƏLƏBƏ`, `MƏĞLUBİYYƏT` —
+fell back to another font for those letters alone, which is visible as a width
+and shape mismatch. Saira Condensed keeps the semi-condensed technical
+character and covers the full Azerbaijani alphabet. The Pencil document is
+updated to match.
 
 Rules:
 

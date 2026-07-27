@@ -31,7 +31,7 @@ state indicator.
 | Question | Decision |
 |---|---|
 | Scope | Full parity with `DESIGN.md` |
-| Assets | Fully self-contained: inline SVG sprite with vendored Lucide paths, system font stacks, no CDN |
+| Assets | Fully self-contained: inline SVG sprite with vendored Lucide paths, self-hosted woff2 fonts, no CDN |
 | Structure | Full JS render; `index.html` holds only the root container |
 | Testing | jsdom unit tests plus extended Playwright coverage |
 | Render strategy | `mount()` once, then `update(state)` patches |
@@ -44,12 +44,20 @@ even for cells that did not change. The existing `_renderBoard` already guards
 this with `if (cell.dataset.state !== newState)`. Patching preserves that
 behaviour and avoids recreating 200 cells per turn.
 
-### Why system fonts rather than Rajdhani / Inter / IBM Plex Mono
+### Fonts are self-hosted, and the display family changed
 
-Self-contained delivery was chosen over pixel-exact typography. Typography will
-not match the Pencil document exactly. This is an accepted trade-off: no network
-dependency, no FOUT, and no flake in end-to-end tests. The type **scale** and
-weights from `DESIGN.md` are still honoured; only the families differ.
+Self-contained delivery ruled out Google Fonts, but not the real families. The
+woff2 files are vendored into `assets/fonts/` by `scripts/build-fonts.mjs` from
+`@fontsource` devDependencies, covering only the weights `main.css` asks for:
+Saira Condensed 700, Inter 400/500/700, IBM Plex Mono 400/600/700. Both the
+`latin` and `latin-ext` subsets are required — `ç ö ü` live in `latin`, while
+`ə ğ ı İ ş` sit in `latin-ext`. Total weight is about 320 KB.
+
+The display family is Saira Condensed rather than the Rajdhani named by the
+design. Rajdhani ships no `U+018F`/`U+0259` (`Ə`/`ə`) glyph, so Azerbaijani
+headings silently fell back for those letters. This was measured, not assumed:
+`tests/e2e/fonts.spec.js` compares glyph advance widths against two very
+different fallbacks and fails if any family cannot set the alphabet.
 
 ## Architecture
 

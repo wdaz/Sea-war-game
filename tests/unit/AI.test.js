@@ -1,5 +1,5 @@
-import { describe, test, expect, beforeEach } from 'vitest';
-import { AI } from '../../src/AI.js';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { AI, huntProbability } from '../../src/AI.js';
 import { Board } from '../../src/Board.js';
 import { Ship } from '../../src/Ship.js';
 
@@ -80,8 +80,8 @@ describe('AI', () => {
     expect(ai.direction).toBeNull();
   });
 
-  test('chooseAttack uses huntQueue when difficulty >= 0.4', () => {
-    ai.difficulty = 0.5;
+  test('chooseAttack always uses huntQueue at maximum difficulty', () => {
+    ai.difficulty = 1.0;
     ai.huntQueue = [42];
     expect(ai.chooseAttack(board)).toBe(42);
   });
@@ -207,5 +207,67 @@ describe('AI forgets a sunk ship', () => {
 
     expect(sunkAi.huntQueue.length).toBeGreaterThan(0);
     expect(sunkAi.lastHit).toBe(41);
+  });
+});
+
+
+describe('huntProbability', () => {
+  test('is zero below the hunting threshold', () => {
+    for (const d of [0.1, 0.2, 0.3]) expect(huntProbability(d)).toBe(0);
+  });
+
+  test('rises across every rung from 0.4 to 1.0', () => {
+    const rungs = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0].map(huntProbability);
+    for (let i = 1; i < rungs.length; i++) {
+      expect(rungs[i], `rung ${i}`).toBeGreaterThan(rungs[i - 1]);
+    }
+  });
+
+  test('spans a quarter to certainty', () => {
+    expect(huntProbability(0.4)).toBeCloseTo(0.25);
+    expect(huntProbability(1.0)).toBeCloseTo(1.0);
+  });
+
+  test('never exceeds 1 or accepts nonsense', () => {
+    expect(huntProbability(5)).toBe(1);
+    expect(huntProbability(NaN)).toBe(0);
+  });
+});
+
+describe('AI follow-up rate honours difficulty', () => {
+  let rng, restore;
+
+  beforeEach(() => {
+    localStorage.clear();
+    restore = Math.random;
+  });
+
+  afterEach(() => {
+    Math.random = restore;
+  });
+
+  function usesQueue(difficulty, roll) {
+    const probe = new AI();
+    probe.difficulty = difficulty;
+    probe.huntQueue = [42];
+    // First call decides queue vs random; later calls pick the random cell.
+    let first = true;
+    Math.random = () => {
+      if (first) { first = false; return roll; }
+      return 0;
+    };
+    return probe.chooseAttack(new Board()) === 42;
+  }
+
+  test('follows the lead when the roll lands under the probability', () => {
+    expect(usesQueue(0.5, 0.1)).toBe(true);
+  });
+
+  test('fires at random when the roll lands above it', () => {
+    expect(usesQueue(0.5, 0.9)).toBe(false);
+  });
+
+  test('never follows a lead below the threshold', () => {
+    expect(usesQueue(0.3, 0.0001)).toBe(false);
   });
 });

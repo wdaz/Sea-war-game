@@ -198,26 +198,90 @@ game.restart()                     // eyni AI çətinliyi ilə yenidən başla
 
 ---
 
-## 7. Manual Test Ssenarisi
+## 7. Test Strategiyası
 
-Browser konsolunda:
+**Alətlər:** Vitest (unit) + Playwright (e2e)
+
+**Fayl strukturu:**
+
+```
+tests/
+  unit/
+    Ship.test.js
+    Board.test.js
+    AI.test.js
+    Game.test.js
+  e2e/
+    placement.spec.js   — gəmi yerləşdirmə axışı
+    battle.spec.js      — döyüş mərhələsi, hit/miss
+    gameover.spec.js    — qalibiyyət şərti, skor, yenidən oyna
+```
+
+**Unit test nümunələri (Vitest):**
 
 ```js
-import { Ship } from './src/Ship.js';
-import { Board } from './src/Board.js';
+// Ship.test.js
+import { Ship } from '../../src/Ship.js';
 
-// Ship testi
-const s = new Ship(3);
-s.place(0, 'horizontal');
-s.hit(0); s.hit(1); s.hit(2);
-console.assert(s.isSunk() === true, 'Ship should be sunk');
+test('isSunk returns true when all cells hit', () => {
+  const ship = new Ship(3);
+  ship.place(0, 'horizontal');
+  ship.hit(0); ship.hit(1); ship.hit(2);
+  expect(ship.isSunk()).toBe(true);
+});
 
-// Board testi
-const b = new Board();
-b.autoPlace();
-console.assert(b.allSunk() === false, 'Fresh board should not be all sunk');
-console.assert(b.receiveAttack(0) !== 'already-attacked', 'Fresh cell');
-console.assert(b.receiveAttack(0) === 'already-attacked', 'Repeat attack');
+test('isSunk returns false when partially hit', () => {
+  const ship = new Ship(3);
+  ship.place(0, 'horizontal');
+  ship.hit(0);
+  expect(ship.isSunk()).toBe(false);
+});
+```
+
+```js
+// Board.test.js
+import { Board } from '../../src/Board.js';
+
+test('receiveAttack returns already-attacked on repeat', () => {
+  const board = new Board();
+  board.receiveAttack(5);
+  expect(board.receiveAttack(5)).toBe('already-attacked');
+});
+
+test('placeShip rejects out-of-bounds placement', () => {
+  const board = new Board();
+  const ship = new Ship(4);
+  expect(board.placeShip(ship, 8, 'horizontal')).toBe(false);
+});
+```
+
+**E2E test nümunələri (Playwright):**
+
+```js
+// placement.spec.js
+test('player can place all ships and start battle', async ({ page }) => {
+  await page.goto('/');
+  await page.click('[data-action="auto-place"]');
+  await page.click('[data-action="start-battle"]');
+  await expect(page.locator('[data-phase="battle"]')).toBeVisible();
+});
+
+// battle.spec.js
+test('clicking AI board registers attack', async ({ page }) => {
+  // ... oyun başlat, hücum et, nəticəni yoxla
+  await expect(page.locator('.ai-board [data-index="0"]'))
+    .toHaveClass(/hit|miss/);
+});
+```
+
+**Test işlətmə skriptləri (`package.json`):**
+
+```json
+"scripts": {
+  "test":      "vitest run",
+  "test:watch": "vitest",
+  "test:e2e":  "playwright test"
+}
 ```
 
 ---
@@ -238,5 +302,5 @@ console.assert(b.receiveAttack(0) === 'already-attacked', 'Repeat attack');
 - Onlayn çox oyunçu
 - Backend / server
 - Animasiya kitabxanaları (GSAP və s.)
-- Test framework (Jest və s.)
-- Build tool (Webpack, Vite və s.)
+- Build tool (Webpack və s.) — Vitest/Playwright öz setup-larını gətirir, əlavə bundler lazım deyil
+- Onlayn çox oyunçu, backend, server

@@ -38,6 +38,11 @@ function arg(name, fallback) {
 const PORT = Number(arg('port', process.env.PORT || 3000));
 const ROOT = resolve(arg('root', '.'));
 
+// An explicitly requested port is honoured exactly: if it is taken, that is an
+// error rather than something to work around. Only the default drifts upward.
+const PORT_IS_EXPLICIT = process.argv.includes('--port') || Boolean(process.env.PORT);
+const MAX_PORT_ATTEMPTS = 10;
+
 // Hidden entries and dependency trees are never served. Without this the git
 // directory would be readable over HTTP.
 const DENIED = /(^|\/)(\.[^/]+|node_modules)(\/|$)/;
@@ -106,25 +111,59 @@ const server = createServer(async (req, res) => {
     .pipe(res);
 });
 
+// Both handlers are registered exactly once. Passing a callback to
+// server.listen() on each retry would instead queue one 'listening' listener
+// per attempt, and all of them would fire — and print — as soon as the server
+// finally bound, reporting the ports that failed rather than the one in use.
+let port = PORT;
+let attempt = 1;
+
+server.on('listening', () => {
+  console.log(`Serving ${ROOT} on http://localhost:${server.address().port}`);
+});
+
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(
-      `Port ${PORT} is already in use. Stop whatever is listening there, `
-      + `or pick another port:\n  npm run serve -- --port ${PORT + 1}`,
-    );
+    if (!PORT_IS_EXPLICIT && attempt < MAX_PORT_ATTEMPTS) {
+      console.log(`Port ${port} is in use, trying ${port + 1}`);
+      port += 1;
+      attempt += 1;
+      server.listen(port);
+      return;
+    }
+    const hint = PORT_IS_EXPLICIT
+      ? 'Stop whatever is listening there, or choose a different port.'
+      : `Tried ${PORT} through ${port}. Stop one of those servers, or pass --port.`;
+    console.error(`Port ${port} is already in use. ${hint}`);
     process.exit(1);
   }
   if (err.code === 'EACCES') {
-    console.error(`Port ${PORT} needs elevated privileges. Use a port above 1024.`);
+    console.error(`Port ${port} needs elevated privileges. Use a port above 1024.`);
     process.exit(1);
   }
   throw err;
 });
 
-server.listen(PORT, () => {
-  console.log(`Serving ${ROOT} on http://localhost:${PORT}`);
-});
+server.listen(port);
+
+// server.close() only stops accepting new connections; it waits for open ones
+// to end. A browser holds its keep-alive socket open indefinitely, so closing
+// alone never completes and the port stays bound. Existing sockets are
+// destroyed too, with a short failsafe in case something still lingers.
+//
+// Ctrl+Z is deliberately not handled: SIGTSTP means "suspend, I will resume
+// with fg", and a suspended process keeps its port. Use Ctrl+C to stop.
+let shuttingDown = false;
+
+function shutdown() {
+  if (shuttingDown) process.exit(1);
+  shuttingDown = true;
+
+  server.close(() => process.exit(0));
+  server.closeAllConnections?.();
+  setTimeout(() => process.exit(0), 2000).unref();
+}
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
-  process.on(signal, () => server.close(() => process.exit(0)));
+  process.on(signal, shutdown);
 }

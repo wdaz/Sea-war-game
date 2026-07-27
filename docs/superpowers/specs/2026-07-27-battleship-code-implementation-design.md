@@ -120,9 +120,11 @@ new BoardView({ side: 'player' | 'ai', title })
 **`HudView.js`**
 
 ```
-mount()  -> { header, operations, statusBar, legend }
-update({ phase, scores, nextShipSize, shipsRemaining, direction,
-         message, eyebrow, tone })
+mountHeader()      -> HTMLElement   contains [data-score] and [data-action="new-game"]
+mountOperations()  -> HTMLElement   [data-controls="placement"]
+mountStatusBar()   -> HTMLElement   contains [data-message]
+mountLegend()      -> HTMLElement
+update({ phase, scores, nextShipSize, shipsRemaining, direction, message, tone })
 ```
 
 **`ResultView.js`**
@@ -171,7 +173,8 @@ phaseLabel      placement -> 'DONANMANI YERLƏŞDİR'
 nextShipSize    SHIP_SIZES[game.currentShipIndex]
 shipsRemaining  SHIP_SIZES.length - game.currentShipIndex
 direction       'ÜFÜQİ · R' | 'ŞAQULİ · R'
-eyebrow         placement -> 'YERLƏŞDİRMƏ'
+eyebrow         derived from phase inside HudView, not passed in:
+                placement -> 'YERLƏŞDİRMƏ'
                 battle    -> 'SON GEDİŞ'
                 gameover  -> 'NƏTİCƏ'
 tone            'neutral' | 'danger'    danger only for invalid placement
@@ -198,6 +201,12 @@ reproduce all of them exactly.
 
 Message strings stay byte-identical: `Bu xanaya artıq hücum edilib!`,
 `İstiqamət: Şaquli`, `Təbrik edirik! Siz qalibisiniz! 🎉`.
+
+The result panel's restart button uses `data-action="restart"`, **not**
+`data-action="new-game"`. Three existing tests call
+`page.click('[data-action="new-game"]')`, and Playwright's strict mode fails
+when a selector matches more than one element. Both actions bind to the same
+`game.restart()` handler, so behaviour is identical.
 
 The design shows orientation as a persistent chip (`ÜFÜQİ · R`), but an existing
 test expects `[data-message]` to contain `Şaquli` after rotating. Both are kept:
@@ -307,9 +316,8 @@ Implementation notes:
 
 ## Testing
 
-`vitest.config.js` gains `environmentMatchGlobs` so that only `tests/unit/ui/**`
-runs under jsdom. The 22 existing domain tests stay on the faster `node`
-environment.
+`vitest.config.js` already sets `environment: 'jsdom'` globally and excludes
+`tests/e2e`. No configuration change is required.
 
 ### Unit
 

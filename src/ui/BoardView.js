@@ -16,6 +16,7 @@ export class BoardView {
     this.board = null;
     this.cells = [];
     this.statusEl = null;
+    this.previewed = [];
   }
 
   mount() {
@@ -79,6 +80,27 @@ export class BoardView {
     }
 
     if (status) this._status(status);
+  }
+
+  setPreview(indices, valid) {
+    this.clearPreview();
+    const key = valid ? 'preview' : 'preview--bad';
+    for (const i of indices) {
+      const cell = this.cells[i];
+      if (!cell) continue;
+      cell.classList.add(key);
+      this._marker(cell, key);
+      this.previewed.push(i);
+    }
+  }
+
+  clearPreview() {
+    for (const i of this.previewed) {
+      const cell = this.cells[i];
+      cell.classList.remove('preview', 'preview--bad');
+      this._marker(cell, cell.dataset.state);
+    }
+    this.previewed = [];
   }
 
   _marker(cell, key) {

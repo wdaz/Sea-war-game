@@ -137,3 +137,47 @@ describe('BoardView.update', () => {
     expect(status.dataset.tone).toBe('cyan');
   });
 });
+
+describe('BoardView preview', () => {
+  it('marks a valid preview with the preview class and crosshair', () => {
+    const view = mounted();
+    view.update({ states: new Array(100).fill('') });
+    view.setPreview([0, 1, 2], true);
+
+    for (const i of [0, 1, 2]) {
+      expect(view.cellAt(i).classList.contains('preview')).toBe(true);
+      expect(view.cellAt(i).querySelector('use').getAttribute('href')).toBe('#i-crosshair');
+    }
+  });
+
+  it('marks an invalid preview with preview--bad and an alert', () => {
+    const view = mounted();
+    view.update({ states: new Array(100).fill('') });
+    view.setPreview([88, 89], false);
+
+    expect(view.cellAt(88).classList.contains('preview--bad')).toBe(true);
+    expect(view.cellAt(89).querySelector('use').getAttribute('href')).toBe('#i-triangle-alert');
+  });
+
+  it('restores the underlying marker when the preview is cleared', () => {
+    const view = mounted();
+    const states = new Array(100).fill('');
+    states[0] = 'ship';
+    view.update({ states });
+
+    view.setPreview([0], true);
+    expect(view.cellAt(0).querySelector('use').getAttribute('href')).toBe('#i-crosshair');
+
+    view.clearPreview();
+    expect(view.cellAt(0).classList.contains('preview')).toBe(false);
+    expect(view.cellAt(0).classList.contains('ship')).toBe(true);
+    expect(view.cellAt(0).querySelector('use').getAttribute('href')).toBe('#i-ship');
+  });
+
+  it('leaves cells untouched when clearing with no active preview', () => {
+    const view = mounted();
+    view.update({ states: new Array(100).fill('') });
+    view.clearPreview();
+    expect(view.cellAt(0).className).toBe('cell');
+  });
+});

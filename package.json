@@ -1,11 +1,18 @@
 {
-  "name": "see-war",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "sea-war",
+  "version": "2.0.0",
+  "description": "Battleship game — OOP, TDD, adaptive AI",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "serve": "npx serve . -p 3000"
   },
-  "author": "",
-  "license": "ISC"
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "jsdom": "^29.1.1",
+    "serve": "^14.2.3",
+    "vitest": "^1.6.0"
+  }
 }

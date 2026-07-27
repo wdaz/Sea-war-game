@@ -3,7 +3,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 // Hand-authored 24x24 stroke glyphs standing in for the named Lucide icons,
 // so the project ships no external assets.
 const GLYPHS = {
-  'radar': '<circle cx="12" cy="12" r="9"/><path d="M12 12 12 4"/><path d="M12 12 19 16"/><circle cx="12" cy="12" r="1.5"/>',
+  'radar': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12 20 6"/>',
   'radio-tower': '<path d="M6 20 12 8 18 20"/><path d="M8.5 15h7"/><circle cx="12" cy="4" r="2"/>',
   'crosshair': '<circle cx="12" cy="12" r="9"/><path d="M12 1v4"/><path d="M12 19v4"/><path d="M1 12h4"/><path d="M19 12h4"/>',
   'target': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',

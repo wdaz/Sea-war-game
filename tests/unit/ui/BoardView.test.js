@@ -181,3 +181,103 @@ describe('BoardView preview', () => {
     expect(view.cellAt(0).className).toBe('cell');
   });
 });
+
+function key(board, k) {
+  const event = new window.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true });
+  board.dispatchEvent(event);
+  return event;
+}
+
+describe('BoardView keyboard access', () => {
+  it('creates exactly one tab stop when interactive', () => {
+    const view = mounted();
+    view.update({ states: new Array(100).fill('') });
+    view.setInteractive(true);
+
+    expect(view.board.querySelectorAll('[tabindex="0"]')).toHaveLength(1);
+    expect(view.cellAt(0).getAttribute('tabindex')).toBe('0');
+    expect(view.cellAt(0).getAttribute('role')).toBe('button');
+  });
+
+  it('removes roles and tab stops when not interactive', () => {
+    const view = mounted();
+    view.update({ states: new Array(100).fill('') });
+    view.setInteractive(true);
+    view.setInteractive(false);
+
+    expect(view.board.querySelectorAll('[tabindex]')).toHaveLength(0);
+    expect(view.cellAt(0).hasAttribute('role')).toBe(false);
+  });
+
+  it('marks attacked cells as disabled and unfocusable', () => {
+    const view = mounted();
+    const states = new Array(100).fill('');
+    states[4] = 'miss';
+    states[5] = 'hit';
+    view.update({ states });
+    view.setInteractive(true);
+
+    expect(view.cellAt(4).getAttribute('aria-disabled')).toBe('true');
+    expect(view.cellAt(4).getAttribute('tabindex')).toBe('-1');
+    expect(view.cellAt(5).getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('moves focus with the arrow keys', () => {
+    const view = mounted();
+    view.update({ states: new Array(100).fill('') });
+    view.setInteractive(true);
+
+    key(view.board, 'ArrowRight');
+    expect(view.focusIndex).toBe(1);
+    key(view.board, 'ArrowDown');
+    expect(view.focusIndex).toBe(11);
+    key(view.board, 'ArrowLeft');
+    expect(view.focusIndex).toBe(10);
+    key(view.board, 'ArrowUp');
+    expect(view.focusIndex).toBe(0);
+  });
+
+  it('does not move focus past an edge', () => {
+    const view = mounted();
+    view.update({ states: new Array(100).fill('') });
+    view.setInteractive(true);
+
+    key(view.board, 'ArrowLeft');
+    expect(view.focusIndex).toBe(0);
+    key(view.board, 'ArrowUp');
+    expect(view.focusIndex).toBe(0);
+  });
+
+  it('jumps to the first and last cell with Home and End', () => {
+    const view = mounted();
+    view.update({ states: new Array(100).fill('') });
+    view.setInteractive(true);
+
+    key(view.board, 'End');
+    expect(view.focusIndex).toBe(99);
+    key(view.board, 'Home');
+    expect(view.focusIndex).toBe(0);
+  });
+
+  it('clicks the focused cell on Enter and Space', () => {
+    const view = mounted();
+    view.update({ states: new Array(100).fill('') });
+    view.setInteractive(true);
+
+    const clicked = [];
+    view.board.addEventListener('click', (e) => clicked.push(e.target.dataset.index));
+
+    key(view.board, 'ArrowRight');
+    key(view.board, 'Enter');
+    key(view.board, ' ');
+
+    expect(clicked).toEqual(['1', '1']);
+  });
+
+  it('ignores keys while not interactive', () => {
+    const view = mounted();
+    view.update({ states: new Array(100).fill('') });
+    key(view.board, 'ArrowRight');
+    expect(view.focusIndex).toBe(0);
+  });
+});

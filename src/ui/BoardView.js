@@ -17,6 +17,8 @@ export class BoardView {
     this.cells = [];
     this.statusEl = null;
     this.previewed = [];
+    this.interactive = false;
+    this.focusIndex = 0;
   }
 
   mount() {
@@ -57,7 +59,61 @@ export class BoardView {
       el('div', { className: 'board-grid' }, cols, rows, this.board),
     );
 
+    this.board.addEventListener('keydown', (e) => this._onKeyDown(e));
+
     return this.panel;
+  }
+
+  setInteractive(enabled) {
+    this.interactive = enabled;
+    for (const cell of this.cells) {
+      if (!enabled) {
+        cell.removeAttribute('role');
+        cell.removeAttribute('tabindex');
+        cell.removeAttribute('aria-disabled');
+        continue;
+      }
+      const spent = ['hit', 'miss', 'sunk'].includes(cell.dataset.state);
+      cell.setAttribute('role', 'button');
+      if (spent) cell.setAttribute('aria-disabled', 'true');
+      else cell.removeAttribute('aria-disabled');
+      cell.setAttribute('tabindex', '-1');
+    }
+    if (enabled) this._focus(this.focusIndex, false);
+  }
+
+  _focus(index, moveFocus = true) {
+    const next = Math.max(0, Math.min(99, index));
+    for (const cell of this.cells) cell.setAttribute('tabindex', '-1');
+    this.focusIndex = next;
+    const cell = this.cells[next];
+    cell.setAttribute('tabindex', '0');
+    if (moveFocus) cell.focus();
+  }
+
+  _onKeyDown(e) {
+    if (!this.interactive) return;
+
+    const row = Math.floor(this.focusIndex / 10);
+    const col = this.focusIndex % 10;
+    let next = null;
+
+    if (e.key === 'ArrowRight' && col < 9) next = this.focusIndex + 1;
+    else if (e.key === 'ArrowLeft' && col > 0) next = this.focusIndex - 1;
+    else if (e.key === 'ArrowDown' && row < 9) next = this.focusIndex + 10;
+    else if (e.key === 'ArrowUp' && row > 0) next = this.focusIndex - 10;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = 99;
+    else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      this.cells[this.focusIndex].click();
+      return;
+    } else {
+      return;
+    }
+
+    e.preventDefault();
+    if (next !== null) this._focus(next);
   }
 
   cellAt(index) {

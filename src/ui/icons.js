@@ -17,7 +17,9 @@ const GLYPHS = {
   'ship': '<path d="M3 15h18l-2 5H5z"/><path d="M6 15V9h12v6"/><path d="M12 9V5"/>',
   'refresh-cw': '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/>',
   'rotate-cw': '<path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v4h4"/>',
-  'wand-sparkles': '<path d="M5 19 17 7"/><path d="M15 5l2-2 2 2-2 2z"/><path d="M6 6h2"/><path d="M7 5v2"/>',
+  // Sparkle arms are 6 and 4 units long on purpose: a stroke shorter than its
+  // own 2-unit width collapses into a dot under stroke-linecap: round.
+  'wand-sparkles': '<path d="M4 20 14 10"/><path d="M16 4v6"/><path d="M13 7h6"/><path d="M19 14v4"/><path d="M17 16h4"/>',
   'trophy': '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1a3 3 0 0 0 3 3"/><path d="M16 6h3v1a3 3 0 0 1-3 3"/><path d="M12 13v4"/><path d="M9 20h6"/>',
 };
 

@@ -16,6 +16,6 @@
     "@playwright/test": "^1.44.0",
     "jsdom": "^29.1.1",
     "lucide-static": "^1.27.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.12"
   }
 }
